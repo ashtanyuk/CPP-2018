@@ -153,7 +153,8 @@ int main()
 ### Пример шаблона с целочисленным параметром
 
 ```c++
-template< int BufferSize > // целочисленный параметр char* read(){   char *buffer = new char[ BufferSize ]; 
+template< int BufferSize > // целочисленный параметр 
+char* read(){   char *buffer = new char[ BufferSize ]; 
    return buffer;}
 ...
 char *ReadString = read< 20 >; 
@@ -188,3 +189,58 @@ template<class T> bool less(T a, T b)
 ```
 
 Для числовых типов можно использовать операцию "меньше", а для строк С - вызов библиотечной функции.
+
+Еще пример специализации:
+
+```c++
+#include <iostream>
+using namespace std;
+template<typename T> T func(T t) {
+    cout << "func" << endl;
+};
+template<typename T> T * func(T *t) {
+    cout << "func with pointer!" << endl;
+};
+int main() {
+    func(2);
+    int i = 2;
+    func(&i);
+}
+```
+
+### Шаблоны и рекурсия
+
+Необычными свойствами обладает использование рекурсии при работе с шаблонами
+
+```c++
+#include <iostream>
+using namespace std;
+template <int i> int func() {
+    return func<i-1>()+i;
+};
+template <> int func<0>() {
+    return 0;
+};
+int main () {
+   cout << func<12>() << endl;
+   return 0;
+};
+```
+
+Рекурсия в случае с шаблонами используется во время построения программы, а не во время ее выполнения. Это дает возможность вычислить значение функции еще до того, как она будет запущена и мгновенно выдать ответ. Расплатой за такую возможность является более длительное время компиляции.
+
+Кстати, при попытке выбрать большое значение для **func** выдается следующая ошибка:
+
+```c++
+fatal error: recursive template instantiation
+      exceeded maximum depth of 256
+    return func<i-1>()+i;
+```
+
+Для обхода этого ограничения служит специальная опция компилятора:
+
+```
+g++ tmpl1.cpp -ftemplate-depth=2000
+```
+
+
