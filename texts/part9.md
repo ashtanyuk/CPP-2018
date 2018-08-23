@@ -4,7 +4,7 @@
 
 Рассмотрим простой пример программы, создающей дополнительный поток:
 
-```c++
+```cpp
 #include <iostream>
 #include <thread>
 using namespace std;
@@ -31,7 +31,7 @@ int main()
 
 В следующем примере создается 100 потоков, каждый из которых стремится вывести строку на экран.
 
-```c++
+```cpp
 #include <iostream>
 #include <vector>
 #include <thread>
