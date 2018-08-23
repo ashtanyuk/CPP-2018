@@ -27,6 +27,156 @@ int main()
 
 Вызов `join()` позволяет остановить главный поток до завершения работы созданного потока.
 
+
+### Временные задержки
+
+В процессе работы потока часто необходимо организовать задержку. Для этой цели используют вызов `this_thread::sleep_for(chrono::milliseconds(t));`, где `t` -  количество миллисекунд. Также есть возможность использовать другие единицы времени, описанные в `chrono`.
+
+```cpp
+void fun()
+{
+   for(int i=0;i<5;i++) {
+      cout<<"Hello"<<endl;
+      this_thread::sleep_for(chrono::milliseconds(100));
+   }
+}
+```
+
+### Идентификатор потока
+
+У каждого потока есть свой числовой **ID**, который можно узнать, вызвав метод `get_id()`:
+
+```cpp
+void fun()
+{
+   for(int i=0;i<5;i++) {
+      cout<<"Hello from "<<this_thread::get_id()<<endl;
+   }
+}
+```
+
+### Измерение времени
+
+Измеряем время между двумя состояниями программы. Объявляются переменные типа `chrono::system_clock::time_point`, в которые заносится текущее время функцией `chrono::system_clock::now()`.  Разница значений, преобразованная в требуемые единицы позволяет получить результат измерения.
+
+```cpp
+int main()
+{
+  chrono::system_clock::time_point start = chrono::system_clock::now();
+  thread t1(tbody);
+  thread t2(tbody);
+  t1.join();
+  t2.join();
+  chrono::system_clock::time_point end=chrono::system_clock::now();
+  auto total=chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  cout << total << endl;
+  return 0;
+}
+```
+
+### Пример: алгоритмы сортировки
+
+Рассмотрим программу, которая запускает в различных потоках методы сортировки. Каждый поток сортирует копию одного и того же массива и сообщает в конце об окончании процедуры. Программа дает представление о скорости работы некоторых алгоритмов.
+
+```cpp
+#include <iostream>
+#include <thread>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+typedef short artype;
+typedef unsigned long long ull;
+enum class SortTypes {Quick,Bubble,Insertion};
+artype* createArray(ull size)
+{
+ artype *arr = new artype[size];
+ for (ull i = 0; i < size; ++i)
+  arr[i] = rand() % 100;
+ return arr;
+}
+void QuickSort(artype* a, ull lo, ull hi)
+{
+ ull i = lo, j = hi, h;
+ artype x = a[(lo + hi) / 2];
+ do
+ {
+  while (a[i]<x) i++;
+  while (a[j]>x) j--;
+  if (i <= j)
+  {
+   h = a[i]; a[i] = a[j]; a[j] = h;
+   i++; j--;
+  }
+ } while (i <= j);
+ if (lo<j) QuickSort(a, lo, j);
+ if (i<hi) QuickSort(a, i, hi);
+}
+void BubbleSort( artype *a, ull N)
+{
+ ull i, j;
+ for (i = N - 1; i>0; i--)
+ for (j = 0; j<i; j++)
+ if (a[j]>a[j + 1])
+ {
+  artype t = a[j];
+  a[j] = a[j + 1];
+  a[j + 1] = t;
+ }  
+}
+void InsertionSort(artype *A, ull N) {
+ ull i, j; 
+ artype temp;
+ for (i = 1; i<N; i++) { 
+  j= i; 
+  temp = A[i]; 
+  while (j>0 && temp<A[j - 1]) { 
+   A[j] = A[j - 1]; 
+   j--; 
+  } 
+  A[j] = temp; 
+ }
+}
+void tbody(artype *arr, ull size, SortTypes type)
+{
+ switch (type)
+ {
+ case SortTypes::Bubble:
+  BubbleSort(arr, size);
+  cout << "Bubble finished!" << endl;
+  break;
+ case SortTypes::Insertion:
+  InsertionSort(arr, size);
+  cout << "Insertion finished!" << endl;
+  break;
+ case SortTypes::Quick:
+  QuickSort(arr, 0,size-1);
+  cout << "Quick finished!" << endl;
+  break;
+ }
+}
+int main()
+{
+ const ull size = 50000;
+ srand(time(0));
+ artype *arr1 = createArray(size);
+ artype *arr2 = new artype[size];
+ artype *arr3 = new artype[size];
+ memcpy(arr2, arr1, size*sizeof(artype));
+ memcpy(arr3, arr1, size*sizeof(artype));
+ thread t1(tbody, arr1,size, SortTypes::Bubble);
+ thread t2(tbody, arr2,size, SortTypes::Insertion);
+ thread t3(tbody, arr3,size, SortTypes::Quick);
+ t1.join();
+ t2.join();
+ t3.join();
+ cout << "Race ended!" << endl;
+ delete[] arr1;
+ delete[] arr2;
+ delete[] arr3;
+}
+```
+
+
 ### Гонка за ресурс
 
 В следующем примере создается 100 потоков, каждый из которых стремится вывести строку на экран.
@@ -54,6 +204,8 @@ int main()
 }
 ```
 
+Обратите внимание на вызов конструктора класса `thread`. Если функция, которая должна быть телом потока, принимает аргументы, то их значения можно передать в качестве дополнительных параметров конструктора.
+
 Результаты программы ужасны, поскольку каждый поток борется за право использовать консоль. Необходима синхронизация.
 
 ![](img/threads1.png)
@@ -62,7 +214,7 @@ int main()
 
 Самый простой способ синхронизации - использование **мьютексов**:
 
-```c++
+```cpp
 
 mutex mu;
 
@@ -73,11 +225,32 @@ void func(int x) {
 }
 ```
 
-Другим, более надежным способом является использование объектов **atomic**, особенно если речь идет об объектах, разделяемых несколькими потоками.
+Принцип работы мьютекса заключается в следующем. Поток, который первый вызывает `lock()` запрещает передавать управление другим потокам, пока не будет вызван `unlock()` тем же потоком. Недостатком этого подхода является необходимость явного освобождения мьютекса. Если в теле потока происходит ошибка и управление аварийно передается в другое место, то освобождение мьютекса не произойдет и другие потоки не смогут выполнить этот же код.
+
+Поэтому, более предпочтителен способ, когда мьютекс "запирается" явно, а освобождается при выходе из блока неявно.
+
+```cpp
+void tbody()
+{
+ for (int i = 0; i < 5; i++)
+ {
+    {
+      lock_guard<mutex> lock(mtx);
+      cout << this_thread::get_id() << endl;
+    }
+ }
+}
+```
+
+Внутри блока создается объект типа `lock_guard`, блокировка мьютекса происходит в конструкторе. Освобождение мьютекса происходит в деструкторе объекта при окончании охватывающего блока.
+
+### Atomic
+
+Другим, более надежным способом является использование объектов типа **atomic**, особенно если речь идет об объектах, разделяемых несколькими потоками.
 
 В следующем примере задается аккумулятор, в который потоки записывают квадраты чисел:
 
-```c++
+```cpp
 #include <atomic>
 
 atomic<int> accum(0);
@@ -87,14 +260,8 @@ void square(int x) {
 }
 ```
 
+Тип **atomic** гарантирует, что опрация над значением этого типа будет полностью завершена, прежде чем произойдет переключение на другой поток.
 
-
-### Временные задержки в потоках
-
-```c++
-#include <chrono>
-this_thread::sleep_for(chrono::milliseconds(10));
-```
 
 ### Реализация модели "потребитель-поставщик"
 
@@ -109,7 +276,7 @@ this_thread::sleep_for(chrono::milliseconds(10));
 
 
 
-```c++
+```cpp
 #include <thread>
 #include <iostream>
 #include <queue>
