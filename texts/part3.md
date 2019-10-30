@@ -1,6 +1,6 @@
 ## Шаблоны функций
 
-Шаблон функций позволяет задачть описание функции без привязки к конретным типам. В место них применяют типы-параметры.
+Шаблон функций позволяет задать описание функции без привязки к конретным типам. В место них применяют типы-параметры.
 
 ```c++
 template<class T>
@@ -51,7 +51,7 @@ void printSquare(const T& param)
 
 int a=10;
 const int b=a;
-constr int& c=a;
+const int& c=a;
  
 f(a); // T - int, param - const int&
 f(b); // T - int, param - const int& 
@@ -71,7 +71,7 @@ void printSquare(T&& param)
 
 int a=10;
 const int b=a;
-constr int& c=a;
+const int& c=a;
  
 f(a); // T - int&,       param - int&       (a - lvalue)
 f(b); // T - const int&, param - const int& (b - lvalue)
@@ -97,10 +97,14 @@ void swap(T& a, T& b)
 
 Для получения функции проведем *инстанцирование*:
 
-```c++void fun() {  int a=1, b=2;  double c=1.1, d=2.2; 
+```c++
+void fun() {
+  int a=1, b=2;
+  double c=1.1, d=2.2; 
   swap<int>(a,b);  // все в порядке
   swap(c,d);       // тоже все хорошо
-  swap(a,d);       // ошибка, разные типы a и d!}
+  swap(a,d);       // ошибка, разные типы a и d!
+}
 ```
 
 ### Передача ссылки на массив
@@ -154,8 +158,11 @@ int main()
 
 ```c++
 template< int BufferSize > // целочисленный параметр 
-char* read(){   char *buffer = new char[ BufferSize ]; 
-   return buffer;}
+char* read()
+{
+   char *buffer = new char[ BufferSize ]; 
+   return buffer;
+}
 ...
 char *ReadString = read< 20 >; 
 delete [] ReadString; 
@@ -167,15 +174,28 @@ ReadString = read< 30 >;
 
 В шаблонах допускается использование различных видов параметров
 
-```c++template<class T1, // параметр-тип typename T2, // параметр-тип int I,   // параметр обычного типа T1 DefaultValue, // параметр обычного типа template< class > class T3,// параметр-шаблон class Character = char // параметр по умолчанию >
+```c++
+template
+<class T1, // параметр-тип
+ typename T2, // параметр-тип
+ int I,   // параметр обычного типа
+ T1 DefaultValue, // параметр обычного типа
+ template< class > class T3,// параметр-шаблон
+ class Character = char // параметр по умолчанию >
 ```
 
 ### Перегрузка шаблонов
 
 ```c++
-template<class T> T sqrt(T);template<class T> complex<T> sqrt(complex<T>); 
+template<class T> T sqrt(T);
+template<class T> complex<T> sqrt(complex<T>); 
 double sqrt(double);
-void fun(complex<double> z) {  sqrt(2);  sqrt(2.0);  sqrt(z);}
+
+void fun(complex<double> z) {
+  sqrt(2);
+  sqrt(2.0);
+  sqrt(z);
+}
 ```
 
 ### Специализация шаблонов
@@ -184,8 +204,13 @@ double sqrt(double);
 
 ```c++
 template<class T> bool less(T a, T b) 
-{   return a < b; 
-}template<> bool less<const char*>(const char* a, const char* b){   return strcmp(a, b) < 0;}
+{
+   return a < b; 
+}
+template<> bool less<const char*>(const char* a, const char* b)
+{
+   return strcmp(a, b) < 0;
+}
 ```
 
 Для числовых типов можно использовать операцию "меньше", а для строк С - вызов библиотечной функции.
