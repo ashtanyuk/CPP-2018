@@ -192,9 +192,9 @@ template<class T> complex<T> sqrt(complex<T>);
 double sqrt(double);
 
 void fun(complex<double> z) {
-  sqrt(2);
-  sqrt(2.0);
-  sqrt(z);
+  sqrt(2);   // sqrt<int> (int)
+  sqrt(2.0); // sqrt(double)
+  sqrt(z);   // sqrt <double> (complex<double>)
 }
 ```
 
